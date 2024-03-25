@@ -20,7 +20,7 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Run staticcheck
-        uses: dominikh/staticcheck-action@v1.3.0
+        uses: dominikh/staticcheck-action@v1.3.1
         with:
           version: "2023.1.5"
           install-go: false
