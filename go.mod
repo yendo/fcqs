@@ -1,8 +1,9 @@
 module github.com/yendo/fcqs
 
-go 1.21
+go 1.23.0
 
 require (
+	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.10.0
 	mvdan.cc/xurls/v2 v2.5.0
 )

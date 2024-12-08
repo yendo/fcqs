@@ -1,7 +1,7 @@
 VERSION := $(shell git describe --tags --abbrev=0 | awk -F "." '{sub("v","", $$1); printf "%s.%s.%s\n",$$1,$$2,$$3+1}')
 
 BINARY=fcqs-cli
-GO_FILES=cmd/fcqs-cli/main.go fcqs.go go.mod go.sum
+GO_FILES=cmd/fcqs-cli/main.go fcqs.go shell.go shell.bash go.mod go.sum
 GOCOVERDIR=coverdir
 
 $(BINARY): $(GO_FILES)
@@ -41,8 +41,13 @@ integration-test-v: test/$(BINARY)
 .PHONY: super-linter
 super-linter: clean
 	docker run -e RUN_LOCAL=true -e USE_FIND_ALGORITHM=true \
-		-e FILTER_REGEX_EXCLUDE=".*/testdata/.*" -e VALIDATE_GO=false \
-		-v ${PWD}:/tmp/lint/ ghcr.io/super-linter/super-linter:slim-v5
+		-e FILTER_REGEX_EXCLUDE=".*/testdata/.*" \
+		-e BASH_EXEC_IGNORE_LIBRARIES=true \
+		-e VALIDATE_GO=false \
+		-e VALIDATE_JSON_PRETTIER=false \
+		-e VALIDATE_MARKDOWN_PRETTIER=false \
+		-e VALIDATE_YAML_PRETTIER=false \
+		-v ${PWD}:/tmp/lint/ ghcr.io/super-linter/super-linter:slim-v7
 
 .PHONY: clean
 clean:

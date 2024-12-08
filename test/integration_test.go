@@ -208,3 +208,24 @@ func TestDefaultNoteExists(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, buf.stderr.String())
 }
+
+func TestBashScript(t *testing.T) {
+	t.Parallel()
+
+	// Arrange
+	fileName := "../shell.bash"
+	data, err := os.ReadFile(fileName)
+	require.NoError(t, err)
+	expected := string(data)
+
+	buf := &stdBuf{}
+	cmd := buf.newTestCmd("--bash")
+
+	// Act
+	err = cmd.Run()
+
+	// Assert
+	assert.NoError(t, err)
+	assert.Equal(t, expected, buf.stdout.String())
+	assert.Empty(t, buf.stderr.String())
+}

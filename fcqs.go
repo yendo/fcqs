@@ -51,6 +51,8 @@ func WriteTitles(w io.Writer, r io.Reader) {
 }
 
 // WriteContents writes the contents of the note.
+//
+//gocyclo:ignore
 func WriteContents(w io.Writer, r io.Reader, title string) {
 	title = strings.Trim(title, " ")
 	_, isNoTitle := os.LookupEnv("FCQS_CONTENTS_NO_TITLE")
@@ -124,7 +126,7 @@ func isContentsEnd(line string) bool {
 	return strings.HasPrefix(strings.TrimLeft(line, "#"), " ")
 }
 
-// PrintsFirstURL writes the first URL in the contents of the note.
+// WriteFirstURL writes the first URL in the contents of the note.
 func WriteFirstURL(w io.Writer, r io.Reader, title string) {
 	var buf bytes.Buffer
 
