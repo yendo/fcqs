@@ -56,7 +56,7 @@ func run(w io.Writer) error {
 		case *showURL:
 			fcqs.WriteFirstURL(w, file, args[0])
 		case *showCmd:
-			fcqs.WriteFirstCmdLine(w, file, args[0])
+			fcqs.WriteFirstCmdLineBlock(w, file, args[0])
 		case *showLoc:
 			fcqs.WriteNoteLocation(w, file, args[0])
 		}

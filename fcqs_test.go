@@ -169,7 +169,7 @@ func TestWriteFirstCmdLine(t *testing.T) {
 			var buf bytes.Buffer
 			file := test.OpenTestNotesFile(t, test.TestShellBlockFile)
 
-			fcqs.WriteFirstCmdLine(&buf, file, tc.title)
+			fcqs.WriteFirstCmdLineBlock(&buf, file, tc.title)
 
 			expected := map[bool]string{true: "ls -l | nl\n", false: ""}
 			assert.Equal(t, expected[tc.output], buf.String())

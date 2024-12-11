@@ -16,86 +16,117 @@ import (
 
 const DefaultNotesFile = "fcnotes.md"
 
+// State of text line
+const (
+	Normal = iota
+	Fenced
+	Scoped
+	ScopedFenced
+)
+
 // WriteTitles writes the titles of all notes.
 func WriteTitles(w io.Writer, r io.Reader) {
 	var allTitles []string
 	var title string
 
 	scanner := bufio.NewScanner(r)
-	isFenced := false
+	state := Normal
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if !isFenced && strings.HasPrefix(line, "#") {
-			if !strings.HasPrefix(strings.TrimLeft(line, "#"), " ") {
-				// skip titles without a space after the `#`
-				continue
+		switch state {
+		case Normal:
+			if isTitleLine(line) {
+				title = strings.Trim(line, "# ")
+			} else if line != "" {
+				if title != "" && !slices.Contains(allTitles, title) {
+					fmt.Fprintln(w, title)
+					allTitles = append(allTitles, title)
+				}
+
+				if strings.HasPrefix(line, "```") {
+					state = Fenced
+				}
 			}
 
-			title = strings.Trim(line, "# ")
-			if title == "" {
-				continue
+		case Fenced:
+			if strings.HasPrefix(line, "```") {
+				state = Normal
 			}
-
-		} else if line != "" && title != "" && !slices.Contains(allTitles, title) {
-			// skip if content or title is blank
-			fmt.Fprintln(w, title)
-			allTitles = append(allTitles, title)
-		}
-
-		if strings.HasPrefix(line, "```") {
-			isFenced = !isFenced
 		}
 	}
 }
 
 // WriteContents writes the contents of the note.
-//
-//gocyclo:ignore
 func WriteContents(w io.Writer, r io.Reader, title string) {
 	title = strings.Trim(title, " ")
-	_, isNoTitle := os.LookupEnv("FCQS_CONTENTS_NO_TITLE")
+	state := Normal
 
-	var isScope, isFenced, isBlank bool
-	var outputLines int
+	_, isNoTitle := os.LookupEnv("FCQS_CONTENTS_NO_TITLE")
+	f := NewFilter(w, isNoTitle)
 
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if !isFenced && isContentsBegin(line, title) {
-			isScope = true
-		} else if isScope {
-			switch {
-			case !isFenced && isContentsEnd(line):
-				isScope = false
-			case strings.HasPrefix(line, "```"):
-				isFenced = !isFenced
-			case line == "":
-				isBlank = true
-			}
-		}
-
-		if isScope && line != "" {
-			if isBlank {
-				isBlank = false
-
-				if !isNoTitle || outputLines > 1 {
-					fmt.Fprintln(w, "")
-				}
+		switch state {
+		case Normal:
+			if strings.HasPrefix(line, "```") {
+				state = Fenced
 			}
 
-			if !isNoTitle || outputLines > 0 {
-				fmt.Fprintln(w, line)
+			if isSearchedTitleLine(line, title) {
+				state = Scoped
+				f.Write(line)
 			}
-			outputLines++
+
+		case Fenced:
+			if strings.HasPrefix(line, "```") {
+				state = Normal
+			}
+
+		case Scoped:
+			if isTitleLine(line) && !isSearchedTitleLine(line, title) {
+				state = Normal
+				break
+			}
+
+			if strings.HasPrefix(line, "```") {
+				state = ScopedFenced
+			}
+
+			f.Write(line)
+
+		case ScopedFenced:
+			if strings.HasPrefix(line, "```") {
+				state = Scoped
+			}
+			f.Write(line)
 		}
 	}
+
+	f.Write("")
 }
 
-// isContentsBegin returns if the line is the beginning of the contents.
-func isContentsBegin(line string, title string) bool {
+// isTitleLine returns if the line is title line.
+func isTitleLine(line string) bool {
+	// Title line must start with #.
+	if !strings.HasPrefix(line, "#") {
+		return false
+	}
+
+	// Blank title is valid.
+	if strings.TrimLeft(line, "# ") == "" {
+		return true
+	}
+
+	// The title line must have a space after #.
+	return strings.HasPrefix(strings.TrimLeft(line, "#"), " ")
+}
+
+// isSearchedTitleLine returns if the line is the searched title line.
+func isSearchedTitleLine(line string, title string) bool {
 	// Title must start with #.
 	if !strings.HasPrefix(line, "#") {
 		return false
@@ -108,22 +139,6 @@ func isContentsBegin(line string, title string) bool {
 
 	// When the trimmed line and title match, the content starts.
 	return strings.Trim(line, "# ") == strings.Trim(title, "# ")
-}
-
-// isContentsEnd returns if the line is the end of the contents.
-func isContentsEnd(line string) bool {
-	// Title must start with #.
-	if !strings.HasPrefix(line, "#") {
-		return false
-	}
-
-	// Title may be blank.
-	if strings.Trim(line, "# ") == "" {
-		return true
-	}
-
-	// Title must have a space after #
-	return strings.HasPrefix(strings.TrimLeft(line, "#"), " ")
 }
 
 // WriteFirstURL writes the first URL in the contents of the note.
@@ -140,11 +155,11 @@ func WriteFirstURL(w io.Writer, r io.Reader, title string) {
 	}
 }
 
-// WriteFirstCmdLine writes the first command-line in the contents of the note.
-func WriteFirstCmdLine(w io.Writer, r io.Reader, title string) {
+// WriteFirstCmdLineBlock writes the first command-line block in the contents of the note.
+func WriteFirstCmdLineBlock(w io.Writer, r io.Reader, title string) {
 	var buf bytes.Buffer
 
-	isFenced := false
+	state := Normal
 
 	WriteContents(&buf, r, title)
 	scanner := bufio.NewScanner(&buf)
@@ -152,14 +167,16 @@ func WriteFirstCmdLine(w io.Writer, r io.Reader, title string) {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if isShellCodeBlockBegin(line) {
-			isFenced = true
-			continue
-		} else if strings.HasPrefix(line, "```") && isFenced {
-			break
-		}
+		switch state {
+		case Normal:
+			if isShellCodeBlockBegin(line) {
+				state = Fenced
+			}
 
-		if isFenced {
+		case Fenced:
+			if strings.HasPrefix(line, "```") {
+				break
+			}
 			fmt.Fprintln(w, strings.TrimLeft(line, "$ "))
 		}
 	}
@@ -192,7 +209,7 @@ func WriteNoteLocation(w io.Writer, file *os.File, title string) {
 		c++
 		line := scanner.Text()
 
-		if isContentsBegin(line, title) {
+		if isSearchedTitleLine(line, title) {
 			fmt.Fprintf(w, "%q %d\n", file.Name(), c)
 			break
 		}
