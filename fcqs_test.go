@@ -42,7 +42,6 @@ func TestWriteContents(t *testing.T) {
 		{"#   Spaces before the title are ignored\n", "contents\n"},
 		{"# Headings in fenced code blocks are ignored\n", "```\n" + "# fenced heading\n" + "```\n"},
 		{"# There can be no blank line", "contents\n"},
-		{"#\n", "no title contents are combined into one.\n\n" + "#  \n\n" + "title is only spaces\n"},
 		{"# Titles without a space after the # are not recognized\n", "#no_space_title\n\n" + "contents\n\n" +
 			"  # Titles with spaces before the # are not recognized\n\n" + "contents\n"},
 		{"# URL\n", "fcqs: http://github.com/yendo/fcqs/\n" + "github: http://github.com/\n"},
@@ -96,6 +95,14 @@ func TestWriteNoContents(t *testing.T) {
 		title string
 	}{
 		{
+			desc:  "Empty titles are recognized as title, but do not output the contents.",
+			title: "#",
+		},
+		{
+			desc:  "Titles only spaces are recognized as title, but do not output the contents.",
+			title: "#  ",
+		},
+		{
 			desc:  "Titles without a space after the `#` are not recognized as title",
 			title: "#no_space_title",
 		},
@@ -121,13 +128,21 @@ func TestWriteNoContents(t *testing.T) {
 
 func TestWriteFirstURL(t *testing.T) {
 	t.Parallel()
-
-	var buf bytes.Buffer
 	file := test.OpenTestNotesFile(t, test.TestNotesFile)
 
-	fcqs.WriteFirstURL(&buf, file, "URL")
+	t.Run("title is valid", func(t *testing.T) {
+		var buf bytes.Buffer
+		fcqs.WriteFirstURL(&buf, file, "URL")
 
-	assert.Equal(t, "http://github.com/yendo/fcqs/\n", buf.String())
+		assert.Equal(t, "http://github.com/yendo/fcqs/\n", buf.String())
+	})
+
+	t.Run("title is empty", func(t *testing.T) {
+		var buf bytes.Buffer
+		fcqs.WriteFirstURL(&buf, file, "")
+
+		assert.Empty(t, buf.String())
+	})
 }
 
 func TestWriteFirstCmdLine(t *testing.T) {
@@ -153,6 +168,7 @@ func TestWriteFirstCmdLine(t *testing.T) {
 		{"go", false},
 		{"no identifier", false},
 		{"other identifier", false},
+		{"", false},
 	}
 
 	for _, tc := range tests {
@@ -172,13 +188,21 @@ func TestWriteFirstCmdLine(t *testing.T) {
 
 func TestWriteNoteLocation(t *testing.T) {
 	t.Parallel()
-
-	var buf bytes.Buffer
-
 	testFile := test.OpenTestNotesFile(t, test.TestLocationFile)
-	fcqs.WriteNoteLocation(&buf, testFile, "5th Line")
 
-	assert.Equal(t, fmt.Sprintf("%q 5\n", testFile.Name()), buf.String())
+	t.Run("title is valid", func(t *testing.T) {
+		var buf bytes.Buffer
+		fcqs.WriteNoteLocation(&buf, testFile, "5th Line")
+
+		assert.Equal(t, fmt.Sprintf("%q 5\n", testFile.Name()), buf.String())
+	})
+
+	t.Run("title is empty", func(t *testing.T) {
+		var buf bytes.Buffer
+		fcqs.WriteNoteLocation(&buf, testFile, "")
+
+		assert.Empty(t, buf.String())
+	})
 }
 
 func TestGetFcqsFile(t *testing.T) {

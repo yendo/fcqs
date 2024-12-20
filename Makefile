@@ -1,7 +1,7 @@
 VERSION := $(shell git describe --tags --abbrev=0 | awk -F "." '{sub("v","", $$1); printf "%s.%s.%s\n",$$1,$$2,$$3+1}')
 
 BINARY := fcqs-cli
-GO_FILES := $(shell find . -type f -name '*.go' ! -name '*test*') go.* shell.bash
+GO_FILES := $(shell find . -type f -name '*.go') go.* shell.bash
 GOCOVERDIR := coverdir
 
 $(BINARY): $(GO_FILES)

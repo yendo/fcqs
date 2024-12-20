@@ -57,7 +57,7 @@ contents
 contents
 #
 
-no title contents are combined into one.
+no title contents are not output.
 
 #  
 
