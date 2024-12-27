@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"slices"
 	"strings"
 
@@ -230,44 +231,53 @@ func isShellCodeBlockBegin(line string) bool {
 }
 
 // WriteNoteLocation writes the file name and line number of the note.
-func WriteNoteLocation(w io.Writer, file *os.File, title string) error {
+func WriteNoteLocation(w io.Writer, files []*os.File, title string) error {
 	if isEmptyTrimmedTitle(title) {
 		return nil
 	}
 
-	c := 0
-	scanner := bufio.NewScanner(file)
+	for _, file := range files {
+		c := 0
+		scanner := bufio.NewScanner(file)
 
-	for scanner.Scan() {
-		c++
-		line := scanner.Text()
+		for scanner.Scan() {
+			c++
+			line := scanner.Text()
 
-		if isSearchedTitleLine(line, title) {
-			fmt.Fprintf(w, "%q %d\n", file.Name(), c)
-			break
+			if isSearchedTitleLine(line, title) {
+				fmt.Fprintf(w, "%q %d\n", file.Name(), c)
+				break
+			}
+		}
+		if err := scanner.Err(); err != nil {
+			return fmt.Errorf("seek note location: %w", err)
 		}
 	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("seek note location: %w", err)
-	}
-
 	return nil
 }
 
 // NotesFileName returns the filename of the notes.
-func NotesFileName() (string, error) {
-	fileName := os.Getenv("FCQS_NOTES_FILE")
-	if fileName != "" {
-		return fileName, nil
+func NotesFileName() ([]string, error) {
+	var fileNames []string
+
+	f := os.Getenv("FCQS_NOTES_FILE")
+	if f != "" {
+		sep := ":"
+		if runtime.GOOS == "windows" {
+			sep = ";"
+		}
+
+		fileNames = strings.Split(f, sep)
+		return fileNames, nil
 	}
 
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", fmt.Errorf("user home directory: %w", err)
+		return nil, fmt.Errorf("user home directory: %w", err)
 	}
 
-	fileName = filepath.Join(home, DefaultNotesFile)
-	return fileName, nil
+	fileNames = append(fileNames, filepath.Join(home, DefaultNotesFile))
+	return fileNames, nil
 }
 
 // isEmptyTrimmedTitle determines if trimmed tile is empty.

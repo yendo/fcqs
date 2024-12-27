@@ -258,7 +258,7 @@ func TestWriteFirstCmdLine(t *testing.T) {
 
 func TestWriteNoteLocation(t *testing.T) {
 	t.Parallel()
-	testFile := test.OpenTestNotesFile(t, test.LocationFile)
+	testFile := []*os.File{test.OpenTestNotesFile(t, test.LocationFile)}
 
 	t.Run("title is valid", func(t *testing.T) {
 		t.Parallel()
@@ -267,7 +267,7 @@ func TestWriteNoteLocation(t *testing.T) {
 		err := fcqs.WriteNoteLocation(&buf, testFile, "5th Line")
 
 		assert.NoError(t, err)
-		assert.Equal(t, fmt.Sprintf("%q 5\n", testFile.Name()), buf.String())
+		assert.Equal(t, fmt.Sprintf("%q 5\n", testFile[0].Name()), buf.String())
 	})
 
 	t.Run("title is empty", func(t *testing.T) {
@@ -288,7 +288,8 @@ func TestNotesFileName(t *testing.T) {
 
 		fileName, err := fcqs.NotesFileName()
 
-		assert.Empty(t, fileName)
+		// assert.Empty(t, fileName[0])
+		assert.Nil(t, fileName)
 		assert.Error(t, err)
 		assert.EqualError(t, err, "user home directory: $HOME is not defined")
 	})
@@ -300,7 +301,7 @@ func TestNotesFileName(t *testing.T) {
 		fileName, err := fcqs.NotesFileName()
 
 		assert.NoError(t, err)
-		assert.Equal(t, expectedFileName, fileName)
+		assert.Equal(t, expectedFileName, fileName[0])
 	})
 
 	t.Run("default filename", func(t *testing.T) {
@@ -311,6 +312,6 @@ func TestNotesFileName(t *testing.T) {
 		filename, err := fcqs.NotesFileName()
 
 		assert.NoError(t, err)
-		assert.Equal(t, filepath.Join(home, fcqs.DefaultNotesFile), filename)
+		assert.Equal(t, filepath.Join(home, fcqs.DefaultNotesFile), filename[0])
 	})
 }
