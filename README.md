@@ -54,7 +54,7 @@ export FCQS_BASH_BIND_KEY="\C-o"
 export FCQS_COPY_COMMAND="xclip -selection c"
 export FCQS_COPY_WITH_TITLE=true
 export FCQS_OPEN_COMMAND="open"
-export FCQS_NOTES_FILE="~/fcnotes.md"
+export FCQS_NOTES_FILES="~/fcnotes.md"
 ```
 
 > [!NOTE]
@@ -67,7 +67,14 @@ export FCQS_NOTES_FILE="~/fcnotes.md"
 ### File
 
 The default notes file is `~/fcnotes.md`.
-The file can be changed by the environment variable `FCQS_NOTES_FILE`.
+
+The file can be changed by the environment variable `FCQS_NOTES_FILES`.
+The variable can specify multiple files using path separators.
+The path separator is `;` on Windows and `:` on other operating systems.
+
+``` bash
+export FCQS_NOTES_FILES=~/note.md:/usr/local/doc/note.md
+```
 
 ### Format
 
