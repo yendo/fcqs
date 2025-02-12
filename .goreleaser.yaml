@@ -16,11 +16,11 @@ builds:
       - arm64
     binary: fcqs-cli
 archives:
-  - format: tar.gz
+  - formats: [ 'tar.gz' ]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}-{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
     format_overrides:
-    - goos: windows
-      format: zip
+      - goos: windows
+        formats: [ 'zip' ]
     files:
       - none*
 checksum:

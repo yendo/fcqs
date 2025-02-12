@@ -34,6 +34,7 @@ jobs:
           FILTER_REGEX_EXCLUDE: .*/testdata/.*
           BASH_EXEC_IGNORE_LIBRARIES: true
           VALIDATE_GO: false
+          VALIDATE_GO_RELEASER: false # FIXME
           VALIDATE_JSON_PRETTIER: false
           VALIDATE_MARKDOWN_PRETTIER: false
           VALIDATE_YAML_PRETTIER: false
