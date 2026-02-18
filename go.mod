@@ -4,7 +4,7 @@ go 1.23.4
 
 require (
 	github.com/spf13/pflag v1.0.6
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	mvdan.cc/xurls/v2 v2.6.0
 )
 
